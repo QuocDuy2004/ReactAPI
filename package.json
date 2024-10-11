@@ -14,18 +14,29 @@
     "@testing-library/react": "13.4.0",
     "@testing-library/user-event": "13.5.0",
     "apexcharts": "3.41.0",
+    "axios": "^1.7.7",
     "axios-mock-adapter": "1.21.4",
     "bootstrap-icons": "^1.11.3",
+    "i18next": "^23.15.2",
+    "js-cookie": "^3.0.5",
+    "lodash.debounce": "^4.0.8",
     "react": "18.2.0",
     "react-apexcharts": "1.4.0",
     "react-dom": "18.2.0",
+    "react-i18next": "^15.0.2",
+    "react-paginate": "^8.2.0",
     "react-router-dom": "6.12.1",
+    "react-select": "^5.8.1",
     "styled-components": "^5.3.11",
     "stylis-plugin-rtl": "2.1.1",
+    "toastr": "^2.1.4",
     "web-vitals": "2.1.4"
   },
   "devDependencies": {
-    "react-scripts": "^5.0.1"
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.47",
+    "react-scripts": "^5.0.1",
+    "tailwindcss": "^3.4.13"
   },
   "scripts": {
     "start": "react-scripts start",

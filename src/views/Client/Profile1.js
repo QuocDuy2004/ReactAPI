@@ -1,7 +1,9 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { fetchProfile } from '../../api/apiProfile';
-import { fetchChangePassword } from '../../api/apiChangePassword';
+import React, { useEffect, useRef, useState } from "react";
+import axios from 'axios';
 import toastr from 'toastr';
+import 'toastr/build/toastr.min.css';
+
+const API_URL = "https://localhost/api/v3";
 
 const InfoCard = ({ title, value, bgClass, iconClass }) => (
   <div className="col-sm-12 col-md-6 col-lg-6 col-xl-3">
@@ -22,95 +24,128 @@ const InfoCard = ({ title, value, bgClass, iconClass }) => (
 );
 
 const Profile = () => {
-  const [profileData, setProfileData] = useState({});
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [error, setError] = useState('');
+  const [profileData, setProfileData] = useState({
+    balance: 0,
+    total_recharge: 0,
+    total_deduct: 0,
+    username: '',
+    name: '',
+    email: '',
+    level: 0,
+    lang: '',
+    created_at: '',
+    updated_at: '',
+  });
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const tokenRef = useRef(null);
+  const [newPassword, setNewPassword] = useState("");
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      setLoading(true);
+      try {
+        const api_token = localStorage.getItem("api_token");
+        if (!api_token) throw new Error("api_token không tồn tại. Vui lòng đăng nhập.");
+
+        const response = await axios.post(API_URL, {
+          key: api_token,
+          action: "profile",
+        });
+
+        if (response.data.status === "success") {
+          setProfileData({
+            ...response.data.data,
+            api_token,
+          });
+        } else {
+          throw new Error("Không có dịch vụ để hiển thị.");
+        }
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProfile();
+  }, []);
 
   const copyToken = () => {
-    if (tokenRef.current) {
-      tokenRef.current.select();
-      document.execCommand('copy');
-      toastr.success('Sao chép thành công');
+    navigator.clipboard.writeText(profileData.api_token)
+      .then(() => toastr.success('Token đã được sao chép thành công!'))
+      .catch(() => toastr.error('Có lỗi xảy ra khi sao chép token.'));
+  };
+
+  const fetchChangePassword = async (oldPassword, newPassword, confirmPassword) => {
+    try {
+      const api_token = localStorage.getItem('api_token');
+      const csrf_token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+      if (!api_token) {
+        throw new Error("api_token không tồn tại. Vui lòng đăng nhập.");
+      }
+
+      const response = await axios.post(API_URL, {
+        key: api_token,
+        action: "change-password",
+        old_password: oldPassword,
+        new_password: newPassword,
+        confirm_password: confirmPassword,
+      }, {
+        headers: {
+          'X-CSRF-TOKEN': csrf_token
+        }
+      });
+
+      if (response.data.status === "success") {
+        return response.data.data;
+      } else {
+        throw new Error("Không có dịch vụ để hiển thị.");
+      }
+    } catch (error) {
+      console.error("Error fetching services:", error);
+      throw new Error("Không thể lấy thông tin dịch vụ. Vui lòng thử lại.");
     }
   };
 
   const handleChangePassword = async (e) => {
     e.preventDefault();
+
+    // Validate new password and confirm password
+    if (newPassword !== confirmPassword) {
+      toastr.error('Mật khẩu mới và xác nhận mật khẩu không khớp.');
+      return;
+    }
+
     try {
-      setError('');
-      const successMessage = await fetchChangePassword(currentPassword, newPassword, confirmPassword);
-      toastr.success(successMessage); // Hiển thị thông báo thành công từ API
-      // Reset fields after successful password change
-      setCurrentPassword('');
-      setNewPassword('');
-      setConfirmPassword('');
-    } catch (err) {
-      setError(err.message); // Lưu thông báo lỗi vào state để có thể hiển thị nếu cần
-      toastr.error(err.message); // Hiển thị thông báo lỗi từ API
+      await fetchChangePassword(currentPassword, newPassword, confirmPassword);
+      toastr.success('Thay đổi mật khẩu thành công!');
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (error) {
+      toastr.error(error.message);
     }
   };
 
-
-  const fetchUserProfile = async () => {
-    try {
-      const data = await fetchProfile();
-      setProfileData(data);
-    } catch (err) {
-      toastr.error(err.message); // Sử dụng toastr để thông báo lỗi
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchUserProfile();
-  }, []);
-
-  if (loading) {
-    return <div>Loading...</div>; // Hiển thị loading khi dữ liệu đang được tải
-  }
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>{error}</div>;
 
   return (
     <div className="container-fluid">
       <div className="row">
         <InfoCard
           title="Cấp bậc hiện tại"
-          value={
-            profileData.level === "1"
-              ? "Thành viên"
-              : profileData.level === "2"
-                ? "Cộng tác viên"
-                : profileData.level === "3"
-                  ? "Đại lý"
-                  : profileData.level === "4"
-                    ? "Nhà phân phối"
-                    : "Khách hàng tham quan"
-          }
+          value={profileData.level === "1" ? "Thành viên" : profileData.level === "2" ? "Cộng tác viên" : profileData.level === "3" ? "Đại lý" : profileData.level === "4" ? "Nhà phân phối" : "Khác"}
           bgClass="bg-primary"
           iconClass="fas fa-ranking-star"
         />
-        <InfoCard
-          title="Số dư hiện tại"
-          value={`${profileData.balance} ${profileData.type_balance}`}
-          bgClass="bg-success"
-          iconClass="fas fa-wallet"
-        />
-        <InfoCard
-          title="Số tiền đã nạp"
-          value={`${profileData.total_recharge} ${profileData.type_balance}`}
-          bgClass="bg-info"
-          iconClass="fas fa-dollar-sign"
-        />
-        <InfoCard
-          title="Tổng tiền đã tiêu"
-          value={`${profileData.total_deduct} ${profileData.type_balance}`}
-          bgClass="bg-secondary"
-          iconClass="fas fa-database"
-        />
+        <InfoCard title="Số dư hiện tại" value={`${profileData.balance} ${profileData.type_balance}`} bgClass="bg-success" iconClass="fas fa-wallet" />
+        <InfoCard title="Số tiền đã nạp" value={`${profileData.total_recharge} ${profileData.type_balance}`} bgClass="bg-info" iconClass="fas fa-dollar-sign" />
+        <InfoCard title="Tổng tiền đã tiêu" value={`${profileData.total_deduct} ${profileData.type_balance}`} bgClass="bg-secondary" iconClass="fas fa-database" />
       </div>
       <section className="space-y-6">
         <div className="row">
@@ -213,7 +248,7 @@ const Profile = () => {
                       required
                     />
                   </div>
-                  <button type="submit" className="btn btn-primary col-12">Đổi mật khẩu</button>
+                  <button type="submit" className="btn btn-primary">Đổi mật khẩu</button>
                 </form>
               </div>
             </div>

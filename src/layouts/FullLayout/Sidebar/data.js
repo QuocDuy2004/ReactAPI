@@ -17,47 +17,47 @@ const Menuitems = [
   {
     title: "Thông tin",
     icon: AddToPhotosOutlinedIcon,
-    href: "/Profile",
+    href: "/profile",
   },
-  {
-    title: "Website riêng",
-    icon: AddToPhotosOutlinedIcon,
-    href: "/create-website",
-  },
+  // {
+  //   title: "Website riêng",
+  //   icon: AddToPhotosOutlinedIcon,
+  //   href: "/create-website",
+  // },
   {
     title: "Nạp tiền",
     icon: AspectRatioOutlinedIcon,
     href: "/banking",
   },
   {
-    title: "Checkbox",
-    icon: AssignmentTurnedInOutlinedIcon,
-    href: "/form-elements/checkbox",
-  },
-  {
-    title: "Radio",
-    icon: AlbumOutlinedIcon,
-    href: "/form-elements/radio",
-  },
-  {
-    title: "Slider",
-    icon: SwitchCameraOutlinedIcon,
-    href: "/form-elements/slider",
-  },
-  {
-    title: "Switch",
-    icon: SwitchLeftOutlinedIcon,
-    href: "/form-elements/switch",
-  },
-  {
-    title: "Form",
+    title: "Đơn hàng mới",
     icon: DescriptionOutlinedIcon,
-    href: "/form-layouts/form-layouts",
+    href: "/new",
   },
   {
-    title: "Table",
-    icon: AutoAwesomeMosaicOutlinedIcon,
-    href: "/tables/basic-table",
+    title: "Đơn hàng đã mua",
+    icon: AddToPhotosOutlinedIcon,
+    href: "/orders",
+  },
+  {
+    title: "Tài liệu API",
+    icon: AssignmentTurnedInOutlinedIcon,
+    href: "/api",
+  },
+  {
+    title: "Điều khoản dịch vụ",
+    icon: AlbumOutlinedIcon,
+    href: "/term",
+  },
+  {
+    title: "Liên hệ Telegram",
+    icon: SwitchCameraOutlinedIcon,
+    href: "https://t.me/quocduy20",
+  },
+  {
+    title: "Liên hệ Facebook",
+    icon: SwitchLeftOutlinedIcon,
+    href: "https://facebook.com/QuocDuy2004",
   },
 ];
 

@@ -34,7 +34,7 @@ const Buynow = () => {
               position: "relative",
             }}
           >
-            Built with <br /> Material-UI
+            Duymedia <br /> duybuntv@gmail.com
           </Typography>
           <Button
             color="success"

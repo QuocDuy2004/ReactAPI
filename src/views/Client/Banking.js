@@ -1,163 +1,230 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom"; 
+import axios from 'axios';
+import { fetchRecharge } from "../../api/apiRecharge";
+
 
 const Banking = () => {
-  // 2
+  const [formData, setFormData] = useState({
+    username: '',
+    password: '',
+  });
+  const [error, setError] = useState(null);
+  const [successMessage, setSuccessMessage] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [bankAccounts, setBankAccounts] = useState([]); 
+  const [activeTab, setActiveTab] = useState(0); 
+  const [isFetching, setIsFetching] = useState(false);
+  const [transactions, setTransactions] = useState([]); // For storing transaction data
+  const [isFetchingTransactions, setIsFetchingTransactions] = useState(false); // For fetching state
+  const navigate = useNavigate(); 
+
+  useEffect(() => {
+    document.title = "Nạp tiền";
+    fetchBankAccounts(); 
+    fetchTransactionHistory(); // Fetch transactions on component mount
+  }, []);
+
+  const fetchBankAccounts = async () => {
+    setIsFetching(true); 
+    try {
+      const response = await axios.post('http://localhost/api/get-bank'); 
+      if (response.data.status === "success") {
+        setBankAccounts(response.data.data); 
+      } else {
+        setError("Không có thông tin ngân hàng.");
+      }
+    } catch (error) {
+      setError("Không thể lấy thông tin ngân hàng. Vui lòng thử lại.");
+    } finally {
+      setIsFetching(false); 
+    }
+  };
+
+  // Function to fetch transaction history using the new API
+  const fetchTransactionHistory = async () => {
+    setIsFetchingTransactions(true);
+    try {
+      const transactionData = await fetchRecharge(); // Gọi hàm fetchRecharge từ apiBanking.js
+      if (transactionData) {
+        setTransactions(transactionData); // Giả định rằng transactionData là mảng các giao dịch
+      } else {
+        setError("Không có thông tin giao dịch.");
+      }
+    } catch (error) {
+      setError("Không thể lấy thông tin giao dịch. Vui lòng thử lại.");
+    } finally {
+      setIsFetchingTransactions(false); 
+    }
+  };
+
+  const handleTabClick = (index) => {
+    setActiveTab(index); 
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData({
+      ...formData,
+      [name]: value,
+    });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true); 
+
+    const _formData = {
+      username: formData.username,
+      password: formData.password,
+    };
+
+    try {
+      const response = await axios.post('http://127.0.0.1/api/get-bank', _formData);
+      if (response.data.success) {
+        localStorage.setItem("user", JSON.stringify(response.data.user)); 
+        localStorage.setItem("api_token", response.data.token); 
+        localStorage.setItem("username", response.data.user.username); 
+
+        setSuccessMessage(response.data.message);
+        setError(null); 
+        navigate('/home'); 
+      }
+    } catch (error) {
+      if (error.response?.status === 422) {
+        setError(error.response.data.errors);
+      } else {
+        setError(error.response?.data.message || "Đăng nhập thất bại. Vui lòng thử lại sau.");
+      }
+      setSuccessMessage(null);
+    } finally {
+      setIsSubmitting(false); 
+    }
+
+  };
+  const getBankTypeClass = (type) => {
+    switch (type) {
+      case 'MBBANK':
+        return 'text-info';
+      case 'VCB':
+        return 'text-success';
+      case 'ACB':
+        return 'text-primary';
+      case 'TPBank':
+        return 'text-warning'; // Màu cam
+      case 'TCBank':
+        return 'text-danger'; // Màu đỏ
+      default:
+        return '';
+    }
+  };
 
   return (
-  
-  <div className="container-fluid">
-    {/* Page Header */}
-    <div className="d-md-flex d-block align-items-center justify-content-between my-4 page-header-breadcrumb">
-      <div className="ms-auto pageheader-btn">
-        <button type="button" className="btn btn-primary btn-wave waves-effect waves-light me-2">
-          <i className="fa fa-plus mx-1 align-middle" />Số dư: <span className="user-balance">₫998.00</span>
-        </button>
-      </div>
-    </div>
-    {/* Page Header Close */}
-    <div className="row">
-      {/* Instruction Section */}
-      <div className="col-md-6">
-        <div className="card custom-card">
-          <div className="card-header">
-            <h3 className="card-title">Hướng dẫn nạp tiền</h3>
-          </div>
-          <div className="card-body">
-            <p>- Vui lòng nạp đúng theo nội dung đã hiện.<br />
-              - Khi đã chuyển khoản bạn hãy vui lòng đợi 1-&gt;5p để tiền được duyệt auto.<br />
-              - Nếu sai nội dung bạn sẽ phải ib admin để xử lý. Khi xử lý xong bạn sẽ bị trừ 10% phí nạp
-            </p>
+    <div className="container-fluid">
+      <div className="row">
+        {/* Left Column: Hướng dẫn nạp tiền */}
+        <div className="col-md-6">
+          <div className="card custom-card">
+            <div className="card-header">
+              <h4 className="card-title">Hướng dẫn nạp tiền</h4>
+            </div>
+            <div className="card-body">
+              <ol>
+                <li>Chọn ngân hàng phù hợp từ danh sách bên dưới.</li>
+                <li>Sao chép thông tin tài khoản ngân hàng.</li>
+                <li>Chuyển tiền vào tài khoản đã chọn với nội dung nạp tiền.</li>
+                <li>Quét mã QR nếu cần để thanh toán nhanh.</li>
+                <li>Sau khi chuyển khoản thành công, số dư sẽ được cập nhật tự động.</li>
+                <li>Nếu có bất kỳ vấn đề nào, vui lòng liên hệ hỗ trợ.</li>
+              </ol>
+            </div>
           </div>
         </div>
-      </div>
-      {/* Tabs for Payment Methods */}
-      <div className="col-md-6">
-        <div className="card custom-card">
-          <div className="card-body">
-            <ul className="nav nav-pills mb-3 nav-justified" id="pills-tab" role="tablist">
-              <li className="nav-item" role="presentation">
-                <a className="nav-link active" id="pills-pay-tab_0" data-bs-toggle="pill" href="#pills-pay_0" role="tab" aria-controls="pills-pay_0" aria-selected="true">
-                  <img src="https://subgiare.vn/assets/images/momo.png" width={18} style={{marginBottom: 3}} className="me-2" />
-                </a>
-              </li>
-              <li className="nav-item" role="presentation">
-                <a className="nav-link " id="pills-pay-tab_1" data-bs-toggle="pill" href="#pills-pay_1" role="tab" aria-controls="pills-pay_1" aria-selected="false" tabIndex={-1}>
-                  <img src="https://cdn-icons-png.flaticon.com/512/1409/1409946.png" width={18} style={{marginBottom: 3}} className="me-2" />
-                </a>
-              </li>
-              <li className="nav-item" role="presentation">
-                <a className="nav-link" id="pills-other-tab" data-bs-toggle="pill" href="#pills-other" role="tab" aria-controls="pills-other" aria-selected="false" tabIndex={-1}>Other Method</a>
-              </li>
-            </ul>
-            <div className="tab-content" id="pills-tabContent">
-              <div className="tab-pane fade show active" id="pills-pay_0" role="tabpanel" aria-labelledby="pills-pay-tab_0">
-                <div className="box">
-                  <div className="text-center fw-bold">
-                    <div className="bank-info">
-                      <span>Ngân hàng:</span>
-                      <span className="text-danger">MOMO</span>
-                    </div>
-                    <div className="bank-info">
-                      <span>Số tài khoản:</span>
-                      <span className="text-danger">0334713016
-                      </span>
-                    </div>
-                    <div className="bank-info">
-                      <span>Chủ tài khoản:</span>
-                      <span className="text-danger">PHAM QUOC DUY</span>
-                    </div>
-                    <div className="bank-info">
-                      <span>Nội dung chuyển:</span>
-                      <span className="text-danger">naptien22
-                        
-                      </span>
-                    </div>
-                    <div className="bank-info">
-                      <span>Mã QR:</span>
-                      <div className="qr-container">
-                        {/* URL QR Code cho Momo */}
-                        <img id="methodLogo" className="img-fluid qr-image" alt="Momo QR Code" src="https://api.qrserver.com/v1/create-qr-code?size=200x200&cht=qr&data=2|99|0334713016|||0|0|0|naptien22|transfer_myqr" />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div className="tab-pane fade " id="pills-pay_1" role="tabpanel" aria-labelledby="pills-pay-tab_1">
-                <div className="box">
-                  <div className="text-center fw-bold">
-                    <div className="bank-info">
-                      <span>Ngân hàng:</span>
-                      <span className="text-danger">MBBANK</span>
-                    </div>
-                    <div className="bank-info">
-                      <span>Số tài khoản:</span>
-                      <span className="text-danger">1399999909
-                        <a href="javascript:void(0)" onclick="copy('number_1')" className="copy" data-clipboard-text={1399999909}>
-                          <i className="fas fa-copy" />
-                        </a>
-                      </span>
-                    </div>
-                    <div className="bank-info">
-                      <span>Chủ tài khoản:</span>
-                      <span className="text-danger">PHAM QUOC DUY</span>
-                    </div>
-                    <div className="bank-info">
-                      <span>Nội dung chuyển:</span>
-                      <span className="text-danger">naptien22
-                        <a href="javascript:void(0)" onclick="copy('content_codeRecharge');" className="copy" data-clipboard-text="naptien22">
-                          <i className="fas fa-copy" />
-                        </a>
-                      </span>
-                    </div>
-                    <div className="bank-info">
-                      <span>Mã QR:</span>
-                      <div className="qr-container">
-                        {/* URL QR Code cho các ngân hàng khác */}
-                        <img id="methodLogo" className="img-fluid qr-image" alt="VietQR Image" src="https://api.vietqr.io/mbbank/1399999909/0/naptien22/qronly2.jpg?accountName=PHAM+QUOC+DUY&bankName=MBBANK&promotion=0&maxCharge=1000000000" />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div className="tab-pane fade" id="pills-other" role="tabpanel" aria-labelledby="pills-other-tab">
-                <div className="box">
-                  <div className="text-center">
-                    {/* Form Nhập Số Tiền */}
-                    <form method="POST" action="https://localhost/transfer" id="payment-form">
-                      <input type="hidden" name="_token" defaultValue="hFj6wj5GBJxoxqIc9d26nBk2yZ0rd8LBUiFVLQdL" />                                                <div className="mb-3">
-                        <label htmlFor="payment_type" className="form-label">Chọn loại thanh
-                          toán:</label>
-                        <select name="payment_type" id="payment_type" className="form-control" required>
-                          <option value disabled selected>Chọn loại thanh toán
-                          </option>
-                        </select>
-                      </div>
-                      {/* Account number and QR Code container */}
-                      <div className="mb-3" id="account-info-container" style={{display: 'none'}}>
-                        <div className="card p-3">
-                          {/* Account number */}
-                          <div className="mb-2">
-                            <label htmlFor="account_number" className="form-label">Số tài
-                              khoản:</label>
-                            <div id="account_number" className="form-control-plaintext" />
-                            {/* Thay thế input bằng div */}
-                          </div>
-                          {/* QR Code */}
-                          <div className="mb-2 text-center">
-                            <label htmlFor="qr_code" className="form-label">Mã QR:</label>
-                            <img id="qr_code_image" src alt="QR Code" style={{maxWidth: 200, display: 'block', margin: '0 auto'}} />
+
+        {/* Right Column: Tab Ngân hàng */}
+        <div className="col-md-6">
+          <div className="card custom-card">
+            <div className="card-body">
+              <ul className="nav nav-pills mb-3 nav-justified" id="pills-tab" role="tablist">
+                {bankAccounts.map((account, index) => (
+                  <li className="nav-item" role="presentation" key={account.id}>
+                    <a
+                      className={`nav-link ${activeTab === index ? 'active' : ''}`}
+                      onClick={() => handleTabClick(index)} 
+                    >
+                      <img
+                        src={account.logo}
+                        width={18}
+                        style={{ marginBottom: 3 }}
+                        className="me-2"
+                        alt={`${account.type} logo`}
+                      />
+                    </a>
+                  </li>
+                ))}
+                <li className="nav-item" role="presentation">
+                  <a
+                    className={`nav-link ${activeTab === bankAccounts.length ? 'active' : ''}`}
+                    onClick={() => handleTabClick(bankAccounts.length)} 
+                  >
+                    Other Method
+                  </a>
+                </li>
+              </ul>
+              <div className="tab-content" id="pills-tabContent">
+                {bankAccounts.map((account, index) => (
+                  <div
+                    className={`tab-pane fade ${activeTab === index ? 'show active' : ''}`}
+                    id={`pills-pay_${index}`}
+                    key={account.id}
+                  >
+                    {/* Bank account details */}
+                    <div className="box">
+                      <div className="text-center fw-bold">
+                        <div className="bank-info">
+                          <span>Ngân hàng:</span>
+                          <span className="text-danger">{account.type}</span>
+                        </div>
+                        <div className="bank-info">
+                          <span>Số tài khoản:</span>
+                          <span className="text-danger">{account.account_number}</span>
+                        </div>
+                        <div className="bank-info">
+                          <span>Chủ tài khoản:</span>
+                          <span className="text-danger">{account.account_name}</span>
+                        </div>
+                        <div className="bank-info">
+                          <span>Nội dung chuyển:</span>
+                          <span className="text-danger">naptien22</span>
+                        </div>
+                        <div className="bank-info">
+                          <span>Mã QR:</span>
+                          <div className="qr-container">
+                            <img className="img-fluid qr-image" alt={`${account.type} QR Code`} src={account.qr_code} />
                           </div>
                         </div>
                       </div>
-                      {/* Amount container */}
-                      <div className="mb-3" id="amount-container">
-                        <label htmlFor="amount" className="form-label">Số tiền:</label>
-                        <input type="number" id="amount" name="amount" step="0.01" min={0} className="form-control" required />
-                      </div>
-                      {/* Submit button */}
-                      <button type="submit" className="btn btn-primary" id="submit-button">Xác
-                        nhận thanh toán</button>
-                    </form>
+                    </div>
+                  </div>
+                ))}
+                {/* Other method content */}
+                <div className={`tab-pane fade ${activeTab === bankAccounts.length ? 'show active' : ''}`}>
+                  <div className="box">
+                    <div className="text-center">
+                      {/* Form for "Other Method" */}
+                      <form method="POST" action="https://localhost/transfer" id="payment-form">
+                        <input type="hidden" name="_token" value="hFj6wj5zdJ1Kdsa8v9rG5GJPlbM1a91AmLwFEhH6" />
+                        <div className="mb-3">
+                          <label htmlFor="qr_code" className="form-label">Mã QR:</label>
+                          <img className="img-fluid qr-image" alt="QR Code" src="#" />
+                        </div>
+                        <div className="mb-3">
+                          <label htmlFor="amount" className="form-label">Nhập số tiền:</label>
+                          <input type="number" className="form-control" id="amount" name="amount" min={1} placeholder="Nhập số tiền" />
+                        </div>
+                        <button type="submit" className="btn btn-primary w-100">Nạp tiền</button>
+                      </form>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -165,41 +232,53 @@ const Banking = () => {
           </div>
         </div>
       </div>
+
       {/* Transaction History Section */}
-      <div className="col-12">
-        <div className="card custom-card">
-          <div className="card-header">
-            <h3 className="card-title">Lịch sử nạp tiền</h3>
-          </div>
-          <div className="card-body">
-            <div className="table-responsive df-example demo-table">
-              <div id="datatable_wrapper" className="dataTables_wrapper dt-bootstrap5 no-footer">
-                <div className="row">
-                  <div className="col-sm-12 col-md-6" />
-                </div>
-                <div className="row dt-row">
-                  <div className="col-sm-12">
-                    <table className="table table-bordered table-striped datatable text-nowrap dataTable no-footer" id="testds" aria-describedby="datatable_info">
-                      <thead>
-                        <tr>
-                          <th className="sorting sorting_desc" tabIndex={0} aria-controls="datatable" rowSpan={1} colSpan={1} aria-sort="descending" aria-label="#: activate to sort column ascending" style={{width: '45.425px'}}>#</th>
-                          <th className="sorting" tabIndex={0} aria-controls="datatable" rowSpan={1} colSpan={1} aria-label="Cổng thanh toán: activate to sort column ascending" style={{width: '144.062px'}}>Cổng thanh toán</th>
-                          <th className="sorting" tabIndex={0} aria-controls="datatable" rowSpan={1} colSpan={1} aria-label="Mã giao dịch: activate to sort column ascending" style={{width: '112.537px'}}>Mã giao dịch</th>
-                          <th className="sorting" tabIndex={0} aria-controls="datatable" rowSpan={1} colSpan={1} aria-label="Thực nhận: activate to sort column ascending" style={{width: '165.85px'}}>Thực nhận</th>
-                          <th className="sorting" tabIndex={0} aria-controls="datatable" rowSpan={1} colSpan={1} aria-label="Nội dung: activate to sort column ascending" style={{width: '146.65px'}}>Nội dung</th>
-                          <th className="sorting" tabIndex={0} aria-controls="datatable" rowSpan={1} colSpan={1} aria-label="Thời gian: activate to sort column ascending" style={{width: '136.425px'}}>Thời gian</th>
-                        </tr>
-                      </thead>
-                    </table>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+      <div className="card custom-card mt-4">
+        <div className="card-header">
+          <h4 className="card-title">Lịch sử giao dịch</h4>
+        </div>
+        <div className="card-body">
+          {isFetchingTransactions ? (
+            <p>Đang tải lịch sử giao dịch...</p>
+          ) : (
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Mã chuyển khoản</th>
+                  <th>Ngân hàng</th>
+                  <th>Số tiền</th>
+                  <th>Nội dung</th>
+                  <th>Trạng thái</th>
+                  <th>Thời gian</th>
+                </tr>
+              </thead>
+              <tbody>
+                {transactions.map((transaction) => (
+                  <tr key={transaction.id}>
+                    <td>{transaction.id}</td>
+                    <td>{transaction.tranid}</td>
+                    <td className={getBankTypeClass(transaction.type_bank)}>
+                          {transaction.type_bank}
+                        </td>
+                    <td>{transaction.amount}</td>
+                    <td>{transaction.note}</td>
+                    <td className="text-success">{transaction.status}</td>
+                    <td>{new Date(transaction.created_at).toLocaleString()}</td>
+                  </tr>
+                ))}
+                {transactions.length === 0 && (
+                  <tr>
+                    <td colSpan="4" className="text-center">Không có giao dịch nào.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
     </div>
-  </div>
   );
 };
 

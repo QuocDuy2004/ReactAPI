@@ -2,6 +2,7 @@ import React from "react";
 import { experimentalStyled, Container, Box } from "@mui/material";
 import { Outlet } from "react-router-dom";
 
+// Thêm backgroundImage vào AuthWrapper
 const AuthWrapper = experimentalStyled("div")(({ theme }) => ({
   display: "flex",
   flexDirection: "column",
@@ -9,21 +10,18 @@ const AuthWrapper = experimentalStyled("div")(({ theme }) => ({
   justifyContent: "center",
   alignItems: "center",
   backgroundColor: theme.palette.background.default,
+  backgroundImage: "url('/assets/images/backgound_log.jpg')",
+  backgroundSize: "cover",
+  backgroundPosition: "center",
+  backgroundRepeat: "no-repeat",
+  backgroundAttachment: "fixed", 
 }));
 
 const AuthLayout = () => {
   return (
     <AuthWrapper>
       <Container maxWidth="sm" sx={{ textAlign: "center" }}>
-        <Box
-          sx={{
-            backgroundColor: "#ffffff",
-            padding: "30px",
-            borderRadius: "12px",
-            boxShadow: "0 3px 10px rgba(0, 0, 0, 0.1)",
-          }}
-        >
-          {/* Outlet sẽ render các trang Login, Register dựa trên route */}
+        <Box>
           <Outlet />
         </Box>
       </Container>

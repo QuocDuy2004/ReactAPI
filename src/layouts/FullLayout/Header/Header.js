@@ -1,13 +1,12 @@
-import React from "react";
-//import { Link } from 'react-router-dom';
-
-import MenuOutlinedIcon from '@mui/icons-material/MenuOutlined';
-import NotificationsNoneOutlinedIcon from '@mui/icons-material/NotificationsNoneOutlined';
-import AddToPhotosOutlinedIcon from '@mui/icons-material/AddToPhotosOutlined';
-import PersonAddOutlinedIcon from '@mui/icons-material/PersonAddOutlined';
-import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
-import LogoutOutlinedIcon from '@mui/icons-material/LogoutOutlined';
-
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import MenuOutlinedIcon from "@mui/icons-material/MenuOutlined";
+import NotificationsNoneOutlinedIcon from "@mui/icons-material/NotificationsNoneOutlined";
+import PersonAddOutlinedIcon from "@mui/icons-material/PersonAddOutlined";
+import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
+import LogoutOutlinedIcon from "@mui/icons-material/LogoutOutlined";
+import LanguageOutlinedIcon from "@mui/icons-material/LanguageOutlined";
+import { useTranslation } from "react-i18next";
 import {
   AppBar,
   Box,
@@ -19,251 +18,165 @@ import {
   Avatar,
   Divider,
   ListItemIcon,
+  Tooltip,
+  Typography,
 } from "@mui/material";
-
 import userimg from "../../../assets/images/users/user.jpg";
+import toastr from "toastr"; // Import Toastr for notifications
+import "toastr/build/toastr.min.css"; // Import Toastr styles
 
 const Header = (props) => {
-  const [anchorEl, setAnchorEl] = React.useState(null);
+  const { i18n } = useTranslation();
+  const navigate = useNavigate();
 
-  const handleClick = (event) => {
-    setAnchorEl(event.currentTarget);
+  const [anchorEl, setAnchorEl] = useState(null);
+  const [anchorEl4, setAnchorEl4] = useState(null);
+  const [username, setUsername] = useState("");
+
+  const changeLanguage = (lng) => {
+    i18n.changeLanguage(lng);
+    handleCloseLanguageMenu();
   };
 
-  const handleClose = () => {
-    setAnchorEl(null);
+  useEffect(() => {
+    const storedUsername = localStorage.getItem("username");
+    if (storedUsername) {
+      setUsername(storedUsername);
+    } else {
+      navigate("/auth/login");
+    }
+  }, [navigate]);
+
+  const handleClose = () => setAnchorEl(null);
+  const handleClose4 = () => setAnchorEl4(null);
+
+  const handleLogout = () => {
+    localStorage.removeItem("username");
+    toastr.success("Đăng xuất thành công!"); // Display success notification
+    setTimeout(() => {
+      navigate("/auth/login"); // Redirect to login page after 2 seconds
+    }, 2000);
   };
 
-  // 4
-  const [anchorEl4, setAnchorEl4] = React.useState(null);
-
-  const handleClick4 = (event) => {
-    setAnchorEl4(event.currentTarget);
-  };
-
-  const handleClose4 = () => {
-    setAnchorEl4(null);
-  };
-
-  // 5
-  const [anchorEl5, setAnchorEl5] = React.useState(null);
-
-  const handleClick5 = (event) => {
-    setAnchorEl5(event.currentTarget);
-  };
-
-  const handleClose5 = () => {
-    setAnchorEl5(null);
-  };
+  const [anchorElLang, setAnchorElLang] = useState(null);
+  const handleLanguageMenuOpen = (event) => setAnchorElLang(event.currentTarget);
+  const handleCloseLanguageMenu = () => setAnchorElLang(null);
 
   return (
-    <AppBar sx={props.sx} elevation={0} className={props.customClass}>
+    <AppBar
+      sx={{ backgroundColor: "transparent", boxShadow: "none" }}
+      elevation={0}
+      className={props.customClass}
+    >
       <Toolbar>
         <IconButton
           color="inherit"
           aria-label="menu"
           onClick={props.toggleMobileSidebar}
-          sx={{
-            display: {
-              lg: "none",
-              xs: "inline",
-            },
-          }}
+          sx={{ display: { lg: "none", xs: "inline" } }}
         >
-          <MenuOutlinedIcon width="20" height="20" />
+          <MenuOutlinedIcon />
         </IconButton>
-        <IconButton
-          aria-label="menu"
-          color="inherit"
-          aria-controls="dd-menu"
-          aria-haspopup="true"
-          onClick={handleClick5}
-        >
-          <AddToPhotosOutlinedIcon />
-        </IconButton>
-        <Menu
-          id="dd-menu"
-          anchorEl={anchorEl5}
-          keepMounted
-          open={Boolean(anchorEl5)}
-          onClose={handleClose5}
-          anchorOrigin={{ horizontal: "left", vertical: "bottom" }}
-          transformOrigin={{ horizontal: "left", vertical: "top" }}
-          sx={{
-            "& .MuiMenu-paper": {
-              width: "250px",
-              right: 0,
-              top: "70px !important",
-            },
-          }}
-        >
-          <MenuItem onClick={handleClose5}>
-            <Avatar
-              sx={{
-                width: "35px",
-                height: "35px",
-              }}
-            />
-            <Box
-              sx={{
-                ml: 2,
-              }}
-            >
-              New account
-            </Box>
-          </MenuItem>
-          <Divider />
-          <MenuItem onClick={handleClose5}>
-            <Avatar
-              sx={{
-                width: "35px",
-                height: "35px",
-              }}
-            />
-            <Box
-              sx={{
-                ml: 2,
-              }}
-            >
-              New Page
-            </Box>
-          </MenuItem>
-          <MenuItem onClick={handleClose5}>
-            <Avatar
-              sx={{
-                width: "35px",
-                height: "35px",
-              }}
-            />
-            <Box
-              sx={{
-                ml: 2,
-              }}
-            >
-              New Component
-            </Box>
-          </MenuItem>
-        </Menu>
+
         <Box flexGrow={1} />
 
-        {/* ------------------------------------------- */}
-        {/* Notifications Dropdown */}
-        {/* ------------------------------------------- */}
         <IconButton
-          aria-label="menu"
+          title="Thông báo"
+          aria-label="notification-menu"
           color="inherit"
-          aria-controls="notification-menu"
-          aria-haspopup="true"
-          onClick={handleClick}
+          onClick={(event) => setAnchorEl(event.currentTarget)}
         >
-          <NotificationsNoneOutlinedIcon width="20" height="20" />
+          <NotificationsNoneOutlinedIcon />
         </IconButton>
         <Menu
-          id="notification-menu"
           anchorEl={anchorEl}
           keepMounted
           open={Boolean(anchorEl)}
           onClose={handleClose}
           anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
           transformOrigin={{ horizontal: "right", vertical: "top" }}
-          sx={{
-            "& .MuiMenu-paper": {
-              width: "200px",
-              right: 0,
-              top: "70px !important",
-            },
-          }}
+          sx={{ "& .MuiMenu-paper": { width: "250px", right: 0, top: "70px !important" } }}
         >
-          <MenuItem onClick={handleClose}>Action</MenuItem>
-          <MenuItem onClick={handleClose}>Action Else</MenuItem>
-          <MenuItem onClick={handleClose}>Another Action</MenuItem>
+          <MenuItem onClick={handleClose}>
+            <Box display="flex" alignItems="center">
+              <NotificationsNoneOutlinedIcon fontSize="small" sx={{ mr: 2 }} />
+              <Box>
+                <Typography variant="body1" fontWeight="bold">
+                  Thông báo 1
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Đây là nội dung của thông báo thứ nhất.
+                </Typography>
+              </Box>
+            </Box>
+          </MenuItem>
         </Menu>
-        {/* ------------------------------------------- */}
-        {/* End Notifications Dropdown */}
-        {/* ------------------------------------------- */}
-        {/* ------------------------------------------- */}
-        {/* Profile Dropdown */}
-        {/* ------------------------------------------- */}
+
         <Box
-          sx={{
-            width: "1px",
-            backgroundColor: "rgba(0,0,0,0.1)",
-            height: "25px",
-            ml: 1,
-          }}
+          sx={{ width: "1px", backgroundColor: "rgba(0,0,0,0.1)", height: "25px", ml: 1 }}
         ></Box>
-        <Button
-          aria-label="menu"
-          color="inherit"
-          aria-controls="profile-menu"
-          aria-haspopup="true"
-          onClick={handleClick4}
-        >
-          <Box
-            sx={{
-              display: "flex",
-              alignItems: "center",
-            }}
+
+        <Tooltip title="Thay đổi ngôn ngữ" arrow>
+          <IconButton
+            color="inherit"
+            onClick={handleLanguageMenuOpen}
+            aria-label="language-menu"
           >
-            <Avatar
-              src={userimg}
-              alt={userimg}
-              sx={{
-                width: "30px",
-                height: "30px",
-              }}
-            />
-          </Box>
-        </Button>
+            <LanguageOutlinedIcon />
+          </IconButton>
+        </Tooltip>
         <Menu
-          id="profile-menu"
+          anchorEl={anchorElLang}
+          keepMounted
+          open={Boolean(anchorElLang)}
+          onClose={handleCloseLanguageMenu}
+          sx={{ "& .MuiMenu-paper": { width: "150px" } }}
+        >
+          <MenuItem onClick={() => changeLanguage("vi")}>Tiếng Việt</MenuItem>
+          <MenuItem onClick={() => changeLanguage("en")}>English</MenuItem>
+        </Menu>
+
+        <Tooltip title="Tài khoản" arrow>
+          <Button
+            aria-label="profile-menu"
+            color="inherit"
+            onClick={(event) => setAnchorEl4(event.currentTarget)}
+          >
+            <Avatar src={userimg} alt="User" sx={{ width: "30px", height: "30px" }} />
+            <Typography sx={{ ml: 1 }}>{username}</Typography>
+          </Button>
+        </Tooltip>
+        <Menu
           anchorEl={anchorEl4}
           keepMounted
           open={Boolean(anchorEl4)}
           onClose={handleClose4}
           anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
           transformOrigin={{ horizontal: "right", vertical: "top" }}
-          sx={{
-            "& .MuiMenu-paper": {
-              width: "250px",
-              right: 0,
-              top: "70px !important",
-            },
-          }}
+          sx={{ "& .MuiMenu-paper": { width: "250px", right: 0, top: "70px !important" } }}
         >
           <MenuItem onClick={handleClose4}>
-            <Avatar
-              sx={{
-                width: "35px",
-                height: "35px",
-              }}
-            />
-            <Box
-              sx={{
-                ml: 2,
-              }}
-            >
-              My account
-            </Box>
+            <Avatar sx={{ width: "35px", height: "35px" }} />
+            <Box sx={{ ml: 2 }}>{username}</Box>
           </MenuItem>
           <Divider />
-          <MenuItem onClick={handleClose4}>
+          <MenuItem onClick={() => { handleClose4(); navigate("/profile"); }}>
             <ListItemIcon>
               <PersonAddOutlinedIcon fontSize="small" />
             </ListItemIcon>
-            Add another account
+            Trang cá nhân
           </MenuItem>
-          <MenuItem onClick={handleClose4}>
+          <MenuItem onClick={() => { handleClose4(); navigate("/settings"); }}>
             <ListItemIcon>
               <SettingsOutlinedIcon fontSize="small" />
             </ListItemIcon>
-            Settings
+            Cài đặt
           </MenuItem>
-          <MenuItem onClick={handleClose4}>
+          <MenuItem onClick={handleLogout}>
             <ListItemIcon>
               <LogoutOutlinedIcon fontSize="small" />
             </ListItemIcon>
-            Logout
+            Đăng xuất
           </MenuItem>
         </Menu>
       </Toolbar>
